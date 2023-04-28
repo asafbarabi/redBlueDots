@@ -38,8 +38,8 @@ class GameBoard:
         self.calculate_winner_button = self.ui.add_button(but_parent=self.master, but_text="Calculate Winner",
                                           but_command=self.calculate_winner, but_width=15, but_state='disabled')
         
-        self.ui.add_label_and_text_box_and_button(self.master,self.generate_grid_game_board,gameboard_range,"Game board grid size:","generate",f"please enter a number between {gameboard_range[0]} to {gameboard_range[1]}")
-        self.ui.add_label_and_text_box_and_button(self.master,self.generate_random_game_board,random_gameboard_range,"Game board Random shape size:","generate",f"please enter a number between {random_gameboard_range[0]} to {random_gameboard_range[1]}")
+        self.ui.add_label_and_text_box_and_button(self.master,self.generate_grid_board,board_range,"board grid size:","generate")
+        self.ui.add_label_and_text_box_and_button(self.master,self.generate_random_game_board,random_gameboard_range,"Game board Random shape size:","generate")
         self.winner_label=self.ui.add_label(self.master,"")
         
 

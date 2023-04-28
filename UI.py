@@ -55,9 +55,7 @@ class UI:
         button.pack(side="bottom", padx=10, pady=10)
         return button
 
-    def add_label_and_text_box_and_button(self, master, button_command, range=(2, 10), label_text="Label:", button_text="Button", error_message="Please enter a number between range"):
-        if error_message == "Please enter a number between range":
-            error_message = f"Please enter a number between {range[0]} to {range[1]}"
+    def add_label_and_text_box_and_button(self, master, button_command, range=(2, 10), label_text="Label:", button_text="Button"):
 
         frame = tk.Frame(master)
         frame.pack(side=tk.BOTTOM)
@@ -78,7 +76,7 @@ class UI:
             if value < range[0] or value > range[1]:
                 # Display error message if value is out of range
                 messagebox.showerror(
-                    "Error", "Please enter a number between 2 and 10")
+                    "Error", f"please enter a number between {range[0]} to {range[1]}")
             else:
                 # Call create_new_board() function if value is valid
                 command(value)
