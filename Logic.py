@@ -48,7 +48,7 @@ def get_best_b1_and_b2_based_on_optimal_r2(r1, grid_points):
     # Find the optimal pair of b1 and b2 for this value of r1
     for b1, b2 in blue_pairs:
         max_red_score, optimal_r2 = get_best_r2(r1, b1, b2, grid_points)
-
+        logger.info(f"strategy:max red score:{max_red_score},r1:{r1},b1:{b1},b2:{b2},r2:{optimal_r2}")
         # Update the optimal strategy for Blue if necessary
         if max_red_score <= min_max_red_score:
             if max_red_score < min_max_red_score:
@@ -56,6 +56,7 @@ def get_best_b1_and_b2_based_on_optimal_r2(r1, grid_points):
                 min_max_red_score = max_red_score
             blue_optimal_strategy.append((b1, b2, optimal_r2))
 
+    logger.info(f" finished strategy max red score:{min_max_red_score} ,r1:{r1},b1:{b1},b2:{b2},r2:{optimal_r2}")
     return (min_max_red_score, blue_optimal_strategy)
 
 
