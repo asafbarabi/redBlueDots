@@ -9,7 +9,9 @@ import random
 
 class GameBoard:
 
-    def __init__(self, master, width=500, height=500, n=10):
+    MAX_BOARD_SIZE=20
+
+    def __init__(self, master, width=500, height=500, n=15):
         self.logger = get_logger(__name__)
         self.logger.info('Logging initialized')
         self.master = master
@@ -27,7 +29,7 @@ class GameBoard:
         self.init_r1_r2_b1_b2()
         
         # Range for buttons that generate game board
-        gameboard_range=(2,self.n)
+        board_range=(2,self.MAX_BOARD_SIZE)
         random_gameboard_range=(4,self.n**2)
 
         # Add two buttons to the bottom of the canvas
@@ -41,35 +43,63 @@ class GameBoard:
         self.winner_label=self.ui.add_label(self.master,"")
         
 
-    def generate_random_game_board(self,n):
+    def generate_random_game_board(self,size):
         #TODO add here edge cases checks
         self.clear_board()
-        while len(self.selected_points) < n:
-            point = random.randint(1, self.n**2)
-            if point not in self.selected_points:
-                self.select_point_for_gameboard(point)
-            
-        
-    def generate_grid_game_board(self,k):
-        #TODO add here edge cases checks
-        self.clear_board()
-        for i in range(k):
-            for j in range(k):
-                self.select_point_for_gameboard((i*self.n)+j)
-                
-            
 
-    # def change_canvas_size(self, size):
-    #     self.ui.remove_all_circles()
-    #     self.points = []
-    #     self.n = size
-    #     self.draw_points()
-    #     self.ui.canvas.bind("<Button-1>", self.handle_click)
-    #     self.button1.pack_forget()
-    #     self.button2.pack_forget()
-    #     # add the buttons with a consistent side value
-    #     self.button1.pack(side="bottom", padx=10, pady=10)
-    #     self.button2.pack(side="bottom", padx=10, pady=10)
+        # Select a random starting point and add it to the shape
+        seed = random.randint(0, self.n*self.n-1)
+        shape = set([seed])
+        self.select_point_for_gameboard(seed)
+
+        # Loop until the shape reaches the desired size
+        while len(shape) < size:
+            # Find the neighbors of the current shape
+            neighbors = self.find_shape_neighbors(shape,self.n)
+
+            # If there are no available neighbors, stop generating the shape
+            if not neighbors:
+                break
+
+            # Select a random neighbor and add it to the shape
+            next_point = random.choice(list(neighbors))
+            shape.add(next_point)
+            self.select_point_for_gameboard(next_point)
+            
+    def find_shape_neighbors(self,shape,n):
+        neighbors = set()
+        for point in shape:
+            x, y = divmod(point, n)
+            for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+                nx, ny = x + dx, y + dy
+                #take into account the fact that some points in the grid are not neighbors because they are at the boundaries between two adjacent rows
+                if 0 <= nx < n and 0 <= ny < n:
+                    neighbor = nx * n + ny
+                    if neighbor not in shape and abs(ny-y) <= 1:
+                        neighbors.add(neighbor)
+        return neighbors
+        
+        
+    # def generate_grid_gameboard(self,k):
+    #     #TODO add here edge cases checks
+    #     self.clear_board()
+    #     for i in range(k):
+    #         for j in range(k):
+    #             self.select_point_for_gameboard((i*self.n)+j)
+    
+    def generate_grid_board(self,size):
+        self.ui.remove_all_circles()
+        self.points = []
+        self.n = size
+        self.draw_points()
+        self.ui.canvas.bind("<Button-1>", self.handle_click)
+        self.init_r1_r2_b1_b2()
+        self.clear_button.pack_forget()
+        self.calculate_winner_button.pack_forget()
+        # add the buttons with a consistent side value
+        self.clear_button.pack(side="bottom", padx=10, pady=10)
+        self.calculate_winner_button.pack(side="bottom", padx=10, pady=10)
+                
 
     def calculate_winner(self):
         grid = self.convertPointsToGrid(self.selected_points)
@@ -261,6 +291,7 @@ class GameBoard:
             
     
     def select_point_for_gameboard(self,point):
+        self.logger.debug(f"points: {len(self.points)} point:{point}")
         self.selected_points.add(self.points[point])
         self.ui.change_button_state(self.calculate_winner_button,button_state='normal' if len(
             self.selected_points) >= 4 else 'disabled')
