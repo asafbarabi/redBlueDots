@@ -37,6 +37,8 @@ class GameBoard:
             but_parent=self.master, but_text="Clear", but_command=self.clear_board, but_width=10)
         self.calculate_winner_button = self.ui.add_button(but_parent=self.master, but_text="Calculate Winner",
                                           but_command=self.calculate_winner, but_width=15, but_state='disabled')
+        self.revert_button = self.ui.add_button(but_parent=self.master, but_text="Revert to last shape",
+                                          but_command=self.Revert_to_last_shape, but_width=15, but_state='disabled')
         
         self.ui.add_label_and_text_box_and_button(self.master,self.generate_grid_board,board_range,"board grid size:","generate")
         self.ui.add_label_and_text_box_and_button(self.master,self.generate_random_game_board,random_gameboard_range,"Game board Random shape size:","generate")
@@ -90,15 +92,18 @@ class GameBoard:
     def generate_grid_board(self,size):
         self.ui.remove_all_circles()
         self.points = []
+        self.selected_points = set()
         self.n = size
         self.draw_points()
         self.ui.canvas.bind("<Button-1>", self.handle_click)
         self.init_r1_r2_b1_b2()
         self.clear_button.pack_forget()
         self.calculate_winner_button.pack_forget()
+        self.revert_button.pack_forget()
         # add the buttons with a consistent side value
         self.clear_button.pack(side="bottom", padx=10, pady=10)
         self.calculate_winner_button.pack(side="bottom", padx=10, pady=10)
+        self.revert_button.pack(side="bottom", padx=10, pady=10)
                 
 
     def calculate_winner(self):
@@ -110,6 +115,21 @@ class GameBoard:
             r1 = strategy[0]
             self.ui.set_circle_color(self.points[r1], "red")
         self.ui.change_button_state(self.calculate_winner_button,button_state='disabled')
+        
+    def Revert_to_last_shape(self):
+        self.init_r1_r2_b1_b2()
+        #return all selected points to green
+        for point in self.selected_points:
+            self.ui.set_circle_color(self.points[point.id], "green")
+        
+        #update only the optimal_strategies to red
+        for strategy in self.optimal_strategies:
+            r1 = strategy[0]
+            self.ui.set_circle_color(self.points[r1], "red")
+            
+        self.ui.change_button_state(self.revert_button,button_state='disabled')
+
+        
 
     def draw_points(self):
         radius = min(self.width, self.height) / (3 * self.n)
@@ -227,7 +247,8 @@ class GameBoard:
             label_text=f"Blue won with score of {blue_score}"
         else:
             label_text=f"Tie with score of {blue_score}"
-            
+        
+        self.logger.info(label_text)
         self.ui.change_label_text(self.winner_label,label_text)
         
     
@@ -238,6 +259,7 @@ class GameBoard:
             self.change_circle_color(point.id, self.unselected_point_color)
         self.selected_points = set()
         self.ui.change_button_state(self.calculate_winner_button,button_state='disabled')
+        self.ui.change_button_state(self.revert_button,button_state='disabled')
         self.init_r1_r2_b1_b2()
 
     def init_r1_r2_b1_b2(self):
@@ -272,6 +294,8 @@ class GameBoard:
         if self.r1 == None and color == "red":
             self.r1 = point
             self.showBlueOptimal(self.r1)
+            
+            self.ui.change_button_state(self.revert_button,button_state='active')
             return
 
         # after choosing possible optimal strategies for blue
