@@ -111,6 +111,11 @@ class GameBoard:
         gridWinner = calculate_winner(grid)
         self.optimal_strategies = self.convert_grid_to_points(gridWinner)
         self.logger.info(f"optimal_strategy:{self.optimal_strategies}")
+        
+        #return all selected points to green before showing red points
+        for point in self.selected_points:
+            self.ui.set_circle_color(self.points[point.id], "green")
+        
         for strategy in self.optimal_strategies:
             r1 = strategy[0]
             self.ui.set_circle_color(self.points[r1], "red")
