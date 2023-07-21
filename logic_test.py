@@ -1,5 +1,7 @@
 import unittest
-from Logic import distance, distance_int, get_best_r2, calculate_winner, get_best_b1_and_b2_based_on_optimal_r2, get_red_score
+from Logic import distance, distance_int, get_best_r2, get_best_b1_and_b2_based_on_optimal_r2, get_red_score
+import pickle
+import os
 
 
 class TestOptimalStrategies(unittest.TestCase):
@@ -7,6 +9,11 @@ class TestOptimalStrategies(unittest.TestCase):
     def test_distance(self):
         self.assertAlmostEqual(distance(
             (0, 0), [(3, 4), (4, 3)]), 5.0)
+        
+    def test_CPU_count(self):
+        num_cores = os.cpu_count()
+        self.assertGreater(num_cores, 11)
+        print("Number of CPU cores:", num_cores)
 
     def test_get_red_score(self):
         r1 = (0, 0)
@@ -27,6 +34,19 @@ class TestOptimalStrategies(unittest.TestCase):
         max_red_score, optimal_r2 = get_best_r2(r1, b1, b2, grid_points)
         self.assertEqual(max_red_score, 3)
         self.assertEqual(optimal_r2, [(1, 1)])
+        
+        
+    def test_get_best_special(self):
+        with open('grid.pickle', 'rb') as f:
+            grid_points = pickle.load(f)
+        r1 = (4, 3)
+        b1= (3,3)
+        b2= (7,5)
+        r2= (8,5)
+        max_red_score, optimal_r2 = get_best_r2(r1, b1, b2, grid_points)
+        min_max_red_score, blue_optimal_strategy = get_best_b1_and_b2_based_on_optimal_r2(
+            r1, grid_points)
+        self.assertEqual(min_max_red_score, 3)
 
     def test_get_best_b1_and_b2_based_on_optimal_r2(self):
         grid_points = [(0, 0), (1, 0), (2, 0), (0, 1), (1, 1),
@@ -34,13 +54,13 @@ class TestOptimalStrategies(unittest.TestCase):
         r1 = (1, 2)
         min_max_red_score, blue_optimal_strategy = get_best_b1_and_b2_based_on_optimal_r2(
             r1, grid_points)
-        self.assertEqual(min_max_red_score, 1)
+        self.assertEqual(min_max_red_score, 2.5)
         self.assertEqual(blue_optimal_strategy[0], ((
-            0, 1), (2, 1), [(0, 0), (2, 0), (1, 1)]))
+            0, 1), (2, 1), [(0, 0), (1, 0), (2, 0)]))
         self.assertEqual(blue_optimal_strategy[1], ((0, 1), (2, 0), [
-                         (0, 0), (1, 0), (1, 1), (2, 1), (0, 2)]))
+                         (0, 0), (1, 0), (1, 1)]))
         self.assertEqual(blue_optimal_strategy[2], ((2, 1), (0, 0), [
-                         (1, 0), (2, 0), (0, 1), (1, 1), (2, 2)]))
+                         (1, 0), (2, 0), (1, 1)]))
 
     # def test_calculate_winner(self):
     #     grid_points = [(0, 0), (1, 0), (2, 0), (0, 1), (1, 1),

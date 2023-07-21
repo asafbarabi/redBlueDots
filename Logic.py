@@ -1,6 +1,8 @@
 import itertools
 import math
 from logger import get_logger
+import multiprocessing
+
 
 
 logger = get_logger(__name__)
@@ -48,7 +50,7 @@ def get_best_b1_and_b2_based_on_optimal_r2(r1, grid_points):
     # Find the optimal pair of b1 and b2 for this value of r1
     for b1, b2 in blue_pairs:
         max_red_score, optimal_r2 = get_best_r2(r1, b1, b2, grid_points)
-        logger.info(f"strategy:max red score:{max_red_score},r1:{r1},b1:{b1},b2:{b2},r2:{optimal_r2}")
+        logger.debug(f"strategy:max red score:{max_red_score},r1:{r1},b1:{b1},b2:{b2},r2:{optimal_r2}")
         # Update the optimal strategy for Blue if necessary
         if max_red_score <= min_max_red_score:
             if max_red_score < min_max_red_score:
@@ -56,7 +58,7 @@ def get_best_b1_and_b2_based_on_optimal_r2(r1, grid_points):
                 min_max_red_score = max_red_score
             blue_optimal_strategy.append((b1, b2, optimal_r2))
 
-    logger.info(f" finished strategy max red score:{min_max_red_score} ,r1:{r1},b1:{b1},b2:{b2},r2:{optimal_r2}")
+    logger.debug(f" finished strategy max red score:{min_max_red_score} ,r1:{r1},b1:{b1},b2:{b2},r2:{optimal_r2}")
     return (min_max_red_score, blue_optimal_strategy)
 
 
@@ -76,11 +78,15 @@ def calculate_winner(grid_points):
     # Initialize variables to keep track of optimal strategies
     optimal_strategies = []
     max_min_max_red_score = -math.inf
-
+    i=0
+    calculations_count=len(grid_points)
+    logger.info(f"started:{calculations_count} calculations")
     # Iterate over all possible choices of r1
     for r1 in grid_points:
         min_max_red_score, blue_optimal_strategy = get_best_b1_and_b2_based_on_optimal_r2(
             r1, grid_points)
+        i+=1
+        logger.info(f"finished:{i}/{calculations_count} calculations")
 
         # Update the optimal strategy for Red if necessary
         if min_max_red_score >= max_min_max_red_score:
@@ -92,3 +98,74 @@ def calculate_winner(grid_points):
     logger.info(f"best red score:{max_min_max_red_score}")
 
     return optimal_strategies
+
+
+def update_optimal_strategies(optimal_strategies, max_score, new_score, new_strategy):
+    if new_score >= max_score:
+        if new_score > max_score:
+            optimal_strategies = []
+            max_score = new_score
+            logger.info(f"best red score: {max_score}")
+        optimal_strategies.append(new_strategy)
+    return optimal_strategies, max_score 
+
+def iterate_get_best_b1_and_b2_based_on_optimal_r2(grid_points,grid_points_chunk, result_queue,process_id):
+    # Initialize variables to keep track of optimal strategies
+    optimal_strategies = []
+    max_min_max_red_score = -math.inf
+    
+    i=0
+    calculations_count=len(grid_points_chunk)
+    logger.info(f"process number {process_id} started calculating:{calculations_count} calculations")
+
+    # Iterate over all possible choices of r1
+    for r1 in grid_points_chunk:
+        min_max_red_score, blue_optimal_strategy = get_best_b1_and_b2_based_on_optimal_r2(
+            r1, grid_points)
+        i+=1
+        logger.info(f"process number {process_id} finished:{i}/{calculations_count} calculations")
+        # Update the optimal strategy for Red if necessary
+        optimal_strategies, max_min_max_red_score = update_optimal_strategies(
+        optimal_strategies, max_min_max_red_score, min_max_red_score, (r1, blue_optimal_strategy))
+    logger.info(f"best red score:{max_min_max_red_score}, finished calculation number {process_id}")
+
+    result_queue.put((max_min_max_red_score,optimal_strategies))
+    
+    
+def calculate_winner_multiprocessing(grid_points):
+    num_cores = multiprocessing.cpu_count()
+    num_processes = num_cores -1 if num_cores > 2 else num_cores
+
+    chunk_size = len(grid_points) // num_processes
+    result_queue = multiprocessing.Queue()
+
+    logger.info(f"start to calculate:{len(grid_points)} calculation")
+    processes = []
+    for i in range(num_processes):
+        start_idx = i * chunk_size
+        end_idx = start_idx + chunk_size if i < num_processes - 1 else len(grid_points)
+        grid_points_chunk = grid_points[start_idx:end_idx]
+        process = multiprocessing.Process(target=iterate_get_best_b1_and_b2_based_on_optimal_r2, args=(grid_points,grid_points_chunk, result_queue,i))
+        processes.append(process)
+        process.start()
+
+    for process in processes:
+        process.join()
+
+    results = []
+    while not result_queue.empty():
+        results.append(result_queue.get())
+        
+    
+    optimal_strategies = []
+    max_min_max_red_score = -math.inf
+
+    for (min_max_red_score,optimal_strategy) in results:
+
+        optimal_strategies, max_min_max_red_score = update_optimal_strategies(
+        optimal_strategies, max_min_max_red_score, min_max_red_score, optimal_strategy)
+    logger.info(f"final best red score:{max_min_max_red_score}")
+    
+    flattened_list = [item for sublist in optimal_strategies for item in sublist]
+
+    return flattened_list

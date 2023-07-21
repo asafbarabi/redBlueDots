@@ -6,7 +6,7 @@ def get_logger(logger_name, log_to_console=True, log_file=None):
     logger = logging.getLogger(logger_name)
 
     # Set the logger's level to DEBUG
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
 
     # Create a formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')

@@ -2,8 +2,9 @@ from UI import UI
 import tkinter as tk
 from itertools import product
 from logger import get_logger
-from Logic import calculate_winner, distance_int
+from Logic import calculate_winner, distance_int, calculate_winner_multiprocessing
 import random
+import time
 
 
 
@@ -13,6 +14,7 @@ class GameBoard:
 
     def __init__(self, master, width=500, height=500, n=15):
         self.logger = get_logger(__name__)
+        self.logger.info('Red Blue Dots Version 3.0')
         self.logger.info('Logging initialized')
         self.master = master
         self.selected_point_gameboard_color="green"
@@ -108,7 +110,10 @@ class GameBoard:
 
     def calculate_winner(self):
         grid = self.convertPointsToGrid(self.selected_points)
-        gridWinner = calculate_winner(grid)
+        start_time = time.time()
+        gridWinner = calculate_winner_multiprocessing(grid)
+        end_time = time.time()
+        self.logger.info(f"The execution time of 'get_optimal_strategies' was {end_time - start_time} seconds.")
         self.optimal_strategies = self.convert_grid_to_points(gridWinner)
         self.logger.info(f"optimal_strategy:{self.optimal_strategies}")
         
