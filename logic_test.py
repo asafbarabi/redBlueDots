@@ -1,10 +1,14 @@
 import unittest
-from Logic import distance, distance_int, get_best_r2, get_best_b1_and_b2_based_on_optimal_r2, get_red_score
+from Logic import distance, distance_int, get_best_r2, get_best_b1_and_b2_based_on_optimal_r2, get_red_score,calculate_winner,calculate_winner_symmetric,calculate_winner_multiprocessing
+from Shapes import *
 import pickle
 import os
+import pprint
+
 
 
 class TestOptimalStrategies(unittest.TestCase):
+
 
     def test_distance(self):
         self.assertAlmostEqual(distance(
@@ -35,19 +39,57 @@ class TestOptimalStrategies(unittest.TestCase):
         self.assertEqual(max_red_score, 3)
         self.assertEqual(optimal_r2, [(1, 1)])
         
+    def my_deep_sort(self,optimal_strategies):
+        #n suppose to be the same as init n
+        n = 15
+        Points_optimal_strategies = []
+        for Strategy in sorted(optimal_strategies):
+            r1 = self.convert_grid_to_point(Strategy[0], n)
+            b1s_b2s_r2s = []
+            for subStrategy in sorted(Strategy[1]):
+                b1 = self.convert_grid_to_point(subStrategy[0], n)
+                b2 = self.convert_grid_to_point(subStrategy[1], n)
+                #it does not matter the order of those points
+                b1, b2 = (b2, b1) if b2 > b1 else (b1, b2)
+                r2s = []
+                for subSubStrategy in sorted(subStrategy[2]):
+                    r2 = self.convert_grid_to_point(subSubStrategy, n)
+                    r2s.append(r2)
+                b1s_b2s_r2s.append((b1, b2, sorted(r2s)))
+            Points_optimal_strategies.append((r1, sorted(b1s_b2s_r2s)))
+        return sorted(Points_optimal_strategies)
+    
+    def convert_grid_to_point(self, num, n):
+        return num[0]+num[1]*n
         
-    def test_get_best_special(self):
-        with open('grid.pickle', 'rb') as f:
-            grid_points = pickle.load(f)
-        r1 = (4, 3)
-        b1= (3,3)
-        b2= (7,5)
-        r2= (8,5)
-        max_red_score, optimal_r2 = get_best_r2(r1, b1, b2, grid_points)
-        min_max_red_score, blue_optimal_strategy = get_best_b1_and_b2_based_on_optimal_r2(
-            r1, grid_points)
-        self.assertEqual(min_max_red_score, 3)
-
+    def test_Calculate_winner3x3_vs_symmetric(self):
+        optimal_strategies_regular = calculate_winner_symmetric(square3x3_grid)
+        optimal_strategies_regular= self.my_deep_sort(optimal_strategies_regular)
+        square3x3_strategy_local= square3x3_strategy
+        square3x3_strategy_local= self.my_deep_sort(square3x3_strategy_local)
+        self.assertEqual(optimal_strategies_regular,square3x3_strategy_local)
+        
+    def test_Calculate_winner_square434(self):
+        optimal_strategies = calculate_winner_symmetric(square434_grid)
+        optimal_strategies =self.my_deep_sort(optimal_strategies)
+        square434_strategy_local= square434_strategy
+        square434_strategy_local=self.my_deep_sort(square434_strategy_local)
+        self.assertEqual(optimal_strategies,square434_strategy_local)
+        
+    def test_Calculate_winner_3x3_vs_multi_processing(self):
+        optimal_strategies = calculate_winner_multiprocessing(square3x3_grid)
+        optimal_strategies =self.my_deep_sort(optimal_strategies)
+        square3x3_strategy_local= square3x3_strategy
+        square3x3_strategy_local=self.my_deep_sort(square3x3_strategy_local)
+        self.assertEqual(optimal_strategies,square3x3_strategy_local)
+        
+    def test_Calculate_winner_6x6_vs_multi_processing(self):
+        optimal_strategies = calculate_winner_multiprocessing(square6x6_grid)
+        optimal_strategies =self.my_deep_sort(optimal_strategies)
+        square6x6_strategy_local= square6x6_strategy
+        square6x6_strategy_local=self.my_deep_sort(square6x6_strategy_local)
+        self.assertEqual(optimal_strategies,square6x6_strategy_local)
+        
     def test_get_best_b1_and_b2_based_on_optimal_r2(self):
         grid_points = [(0, 0), (1, 0), (2, 0), (0, 1), (1, 1),
                        (2, 1), (0, 2), (1, 2), (2, 2)]
@@ -73,4 +115,4 @@ class TestOptimalStrategies(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(buffer=False)
